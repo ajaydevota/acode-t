@@ -94,16 +94,20 @@ if 'applicationId' in gsrc:
     gsrc = re.sub(r'applicationId\s+["\'][\w.]+["\']', 'applicationId "%s"' % NEW_ID, gsrc)
     print("set applicationId =", NEW_ID)
 
-# ---- jitpack repo (root build.gradle)
+# ---- jitpack repo (must be on allprojects so dependencies can use it)
 for rel in ("build.gradle",):
     p = os.path.join(platform, rel)
     if not os.path.exists(p):
         continue
     s = read(p)
     if "jitpack.io" not in s:
-        s = s.replace("repositories {", "repositories {\n        maven { url 'https://jitpack.io' }", 1)
+        s += ("\nallprojects {\n"
+              "    repositories {\n"
+              "        maven { url 'https://jitpack.io' }\n"
+              "    }\n"
+              "}\n")
         write(p, s)
-        print("added jitpack to platforms/android/" + rel)
+        print("appended jitpack allprojects block to platforms/android/" + rel)
 
 # ---- dependencies: terminal-view (prebuilt AAR with the native PTY lib)
 if "termux-app:terminal-view" not in gsrc:
