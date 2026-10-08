@@ -173,32 +173,10 @@ if os.path.exists(b):
         write(b, t)
         print("added jitpack allprojects")
 if "termux-app:terminal-view" not in gsrc:
-    # terminal-view/terminal-emulator from JitPack + exactly the libraries upstream termux-app
-    # and termux-shared use (see their build.gradle files)
-    DEPENDENCIES = [
-        "com.termux.termux-app:terminal-view:0.118.0",
-        "androidx.appcompat:appcompat:1.3.1",
-        "androidx.annotation:annotation:1.3.0",
-        "androidx.core:core:1.6.0",
-        "androidx.drawerlayout:drawerlayout:1.1.1",
-        "androidx.preference:preference:1.1.1",
-        "androidx.viewpager:viewpager:1.0.0",
-        "com.google.android.material:material:1.4.0",
-        "com.google.guava:guava:24.1-jre",
-        # empty artifact that overrides listenablefuture-1.0 pulled in by androidx
-        "com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava",
-        "io.noties.markwon:core:4.6.2",
-        "io.noties.markwon:ext-strikethrough:4.6.2",
-        "io.noties.markwon:linkify:4.6.2",
-        "io.noties.markwon:recycler:4.6.2",
-        "androidx.window:window:1.0.0-alpha09",
-        "commons-io:commons-io:2.5",
-    ]
-    gsrc += "\n\ndependencies {\n"
-    for d in DEPENDENCIES:
-        gsrc += "    implementation '%s'\n" % d
-    gsrc += "}\n"
-    print("added termux dependencies")
+    gsrc += ("\n\ndependencies {\n"
+             "    implementation 'com.termux.termux-app:terminal-view:0.118.0'\n"
+             "}\n")
+    print("added terminal-view dependency")
 
 # ---- arm64-v8a (the bundled bootstrap is arm64)
 if "abiFilters" not in gsrc:
@@ -208,42 +186,10 @@ if "abiFilters" not in gsrc:
         print("abiFilters arm64-v8a")
 write(gradle, gsrc)
 
-# AGP 8 defaults to non-transitive R classes; Termux's code (e.g. appcompat dialog styles)
-# references library resources through the app R, so turn that off.
-props = os.path.join(platform, "gradle.properties")
-t = read(props) if os.path.exists(props) else ""
-if "nonTransitiveRClass" not in t:
-    t += "\nandroid.nonTransitiveRClass=false\n"
-    write(props, t)
-    print("nonTransitiveRClass=false set")
-
 # ---- merge upstream Termux java (app + termux-shared) untouched
 n1 = copy_tree(os.path.join(TERMUX, "app", "src", "main", "java"), java_dir)
 n2 = copy_tree(os.path.join(TERMUX, "termux-shared", "src", "main", "java"), java_dir)
 print("copied termux java:", n1, "+", n2)
-
-# WebSettings.setAppCacheEnabled() was removed in API 33; termux-app 0.118 targets SDK 28.
-help_java = os.path.join(java_dir, "com", "termux", "app", "activities", "HelpActivity.java")
-if os.path.exists(help_java):
-    t = read(help_java)
-    if "setAppCacheEnabled" in t:
-        t = re.sub(r"[^\n]*setAppCacheEnabled\([^\n]*\n", "", t)
-        write(help_java, t)
-        print("removed setAppCacheEnabled (gone in API 33+)")
-
-# termux-shared is its own Gradle module with its own R class; once merged into the app
-# module its resources live in the app R, so point those imports at com.termux.R.
-folded = 0
-for base, _, names in os.walk(java_dir):
-    for name in names:
-        if not name.endswith(".java"):
-            continue
-        fp = os.path.join(base, name)
-        t = read(fp)
-        if "com.termux.shared.R" in t:
-            write(fp, t.replace("com.termux.shared.R", "com.termux.R"))
-            folded += 1
-print("folded termux-shared R imports:", folded)
 
 # ---- merge upstream Termux resources (values are name-deduped; icons left alone)
 tm_res = os.path.join(TERMUX, "app", "src", "main", "res")
@@ -324,6 +270,19 @@ if os.path.exists(ti):
         t = t.replace("import com.termux.R;", "import com.termux.R;\nimport " + ns + ".termux.TermuxBootstrap;", 1)
         write(ti, t)
         print("patched TermuxInstaller -> asset bootstrap + command install")
+
+# The launcher is Termux's own TermuxActivity, so the request watcher (which turns the
+# `eg` / `acode-t` request files into activities) is started from TermuxService.
+ts = os.path.join(java_dir, "com", "termux", "app", "TermuxService.java")
+if os.path.exists(ts):
+    t = read(ts)
+    if "RequestWatcher" not in t:
+        t = t.replace("        runStartForeground();",
+                      "        runStartForeground();\n        " + ns + ".termux.RequestWatcher.start(this);", 1)
+        t = re.sub(r"(package com\.termux\.app;\n)",
+                   r"\1\nimport " + ns + ".termux.RequestWatcher;\n", t, count=1)
+        write(ts, t)
+        print("started RequestWatcher from TermuxService")
     else:
         print("TermuxInstaller already patched")
 
@@ -336,11 +295,6 @@ tm = read(tm_manifest)
 perms = re.findall(r"<uses-permission[^>]*/>", tm)
 feats = re.findall(r"<uses-feature[^>]*/>", tm)
 add_head = "".join(p for p in perms if p not in s) + "".join(f for f in feats if f not in s)
-
-# Termux's manifest uses tools:ignore etc., so the tools namespace must be declared
-if "xmlns:tools" not in s:
-    s = re.sub(r"(<manifest\b[^>]*?)>", r'\1 xmlns:tools="http://schemas.android.com/tools">', s, count=1)
-    print("added xmlns:tools to manifest")
 
 body = tm[tm.index("<application"):tm.rindex("</application>")]
 body = re.sub(r"^<application[^>]*>", "", body, flags=re.S)
