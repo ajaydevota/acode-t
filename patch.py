@@ -394,38 +394,25 @@ if "EditorActivity" not in s:
     print("manifest: EditorActivity added")
 
 # ---- make Termux's own TermuxActivity the ONLY launcher
+# 1) drop every intent-filter that declares the plain LAUNCHER category
+#    (LEANBACK_LAUNCHER does not contain the exact "android.intent.category.LAUNCHER" string)
+s = re.sub(r"<intent-filter[\s\S]*?</intent-filter>",
+           lambda f: "" if "android.intent.category.LAUNCHER" in f.group(0) else f.group(0),
+           s)
+# 2) drop Acode's launcher activity-aliases
 s = re.sub(r"<activity-alias[\s\S]*?</activity-alias>", "", s)
-
-
-def _drop_launcher_filters(text, keep_name):
-    """Remove every MAIN/LAUNCHER intent-filter that does not belong to `keep_name`."""
-    pattern = re.compile(r"<(activity|activity-alias)\b[^>]*?android:name=\"([^\"]+)\"[^>]*>[\s\S]*?</\1>")
-
-    def fix(match):
-        block, name = match.group(0), match.group(2)
-        if keep_name in name:
-            return block
-        return re.sub(r"<intent-filter[\s\S]*?</intent-filter>",
-                      lambda f: "" if "LAUNCHER" in f.group(0) else f.group(0),
-                      block)
-
-    return pattern.sub(fix, text)
-
-
-s = _drop_launcher_filters(s, ".app.TermuxActivity")
+# 3) give Termux's own TermuxActivity the launcher role
+m = re.search(r'<activity\b(?=[^>]*android:name="[^"]*TermuxActivity")[^>]*>', s)
+if not m:
+    fail("could not find TermuxActivity in the merged manifest")
+launcher_filter = (
+    '\n            <intent-filter>\n'
+    '                <action android:name="android.intent.action.MAIN" />\n'
+    '                <category android:name="android.intent.category.LAUNCHER" />\n'
+    '            </intent-filter>')
+s = s[:m.end()] + launcher_filter + s[m.end():]
 if "android.intent.category.LAUNCHER" not in s:
-    fail("no LAUNCHER left after filtering")
-
-# make sure TermuxActivity really has one
-m = re.search(r'(<activity\b[^>]*?android:name="\.app\.TermuxActivity"[^>]*>)', s)
-if m and "LAUNCHER" not in s[m.end():m.end() + 700]:
-    launcher_filter = (
-        '\n            <intent-filter>\n'
-        '                <action android:name="android.intent.action.MAIN" />\n'
-        '                <category android:name="android.intent.category.LAUNCHER" />\n'
-        '            </intent-filter>')
-    s = s[:m.end()] + launcher_filter + s[m.end():]
-    print("added LAUNCHER filter to TermuxActivity")
+    fail("launcher filter was not inserted")
 print("TermuxActivity is now the only launcher")
 
 write(manifest, s)
