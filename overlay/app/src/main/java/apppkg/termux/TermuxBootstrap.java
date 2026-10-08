@@ -50,9 +50,9 @@ public final class TermuxBootstrap {
         File prefix = prefix(c);
         File staging = new File(c.getFilesDir(), "usr-staging");
         try {
-            staging.deleteRecursively();
+            deleteTree(staging);
             staging.mkdirs();
-            prefix.deleteRecursively();
+            deleteTree(prefix);
             prefix.mkdirs();
             home(c).mkdirs();
 
@@ -105,6 +105,19 @@ public final class TermuxBootstrap {
             new File(prefix, "tmp").mkdirs();
         } catch (Exception ignored) {
         }
+    }
+
+    /** Recursively delete a file or directory (File.deleteRecursively is Kotlin-only). */
+    private static void deleteTree(File f) {
+        if (f == null || !f.exists()) return;
+        if (f.isDirectory()) {
+            File[] kids = f.listFiles();
+            if (kids != null) {
+                for (File kid : kids) deleteTree(kid);
+            }
+        }
+        //noinspection ResultOfMethodCallIgnored
+        f.delete();
     }
 
     private static void installCommands(Context c) {
