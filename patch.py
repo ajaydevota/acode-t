@@ -106,14 +106,11 @@ for rel in ("build.gradle",):
         print("added jitpack to platforms/android/" + rel)
 
 # ---- dependencies: terminal-view (prebuilt AAR with the native PTY lib)
-dep = "    implementation 'com.termux.termux-app:terminal-view:0.118.0'\n"
 if "termux-app:terminal-view" not in gsrc:
-    idx = gsrc.find("dependencies {")
-    if idx == -1:
-        fail("no dependencies block in app/build.gradle")
-    idx += len("dependencies {")
-    gsrc = gsrc[:idx] + "\n" + dep + gsrc[idx:]
-    print("added terminal-view dependency")
+    gsrc += ("\n\ndependencies {\n"
+             "    implementation 'com.termux.termux-app:terminal-view:0.118.0'\n"
+             "}\n")
+    print("appended terminal-view dependency block")
 
 # ---- arm64-v8a only
 if "abiFilters" not in gsrc:
