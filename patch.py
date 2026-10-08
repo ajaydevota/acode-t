@@ -185,6 +185,8 @@ if "termux-app:terminal-view" not in gsrc:
         "androidx.viewpager:viewpager:1.0.0",
         "com.google.android.material:material:1.4.0",
         "com.google.guava:guava:24.1-jre",
+        # empty artifact that overrides listenablefuture-1.0 pulled in by androidx
+        "com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava",
         "io.noties.markwon:core:4.6.2",
         "io.noties.markwon:ext-strikethrough:4.6.2",
         "io.noties.markwon:linkify:4.6.2",
