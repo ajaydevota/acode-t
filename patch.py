@@ -113,6 +113,43 @@ if phase == "pre":
     write(cfg, t)
     print("config.xml -> id", NEW_ID, "name", NEW_NAME)
 
+    # ---- share files + tools with Termux ------------------------------------------------
+    _snip = os.path.join(HERE, "overlay", "acode-snippets")
+
+    fb = os.path.join(root, "src", "pages", "fileBrowser", "fileBrowser.js")
+    if os.path.exists(fb):
+        t = read(fb)
+        if "termux-home" not in t:
+            m = re.search(
+                r'util\.pushFolder\(allStorages,\s*"Terminal Public",\s*terminalPublicUrl,\s*'
+                r'\{\s*uuid:\s*"terminal-public",\s*\}\);',
+                t)
+            if m:
+                snippet = read(os.path.join(_snip, "filebrowser_termux.js"))
+                write(fb, t[:m.end()] + snippet + t[m.end():])
+                print("fileBrowser.js: Termux home storage added")
+            else:
+                print("WARNING: fileBrowser.js anchor not found")
+        else:
+            print("fileBrowser.js already patched")
+
+    pm = os.path.join(root, "src", "plugins", "terminal", "src", "android", "ProcessManager.java")
+    if os.path.exists(pm):
+        t = read(pm)
+        if "TERMUX_PREFIX" not in t:
+            m = re.search(r"    private void setupEnvironment\(Map<String, String> env\) \{[\s\S]*?\n    \}", t)
+            if m:
+                snippet = read(os.path.join(_snip, "processmanager_setupenv.java"))
+                t = t[:m.start()] + snippet + t[m.end():]
+                t = t.replace("setupEnvironment(builder.environment());",
+                              "setupEnvironment(builder.environment(), useAlpine);", 1)
+                write(pm, t)
+                print("ProcessManager.java: Termux toolchain shared")
+            else:
+                print("WARNING: ProcessManager.setupEnvironment not found")
+        else:
+            print("ProcessManager.java already patched")
+
     # Acode's browser plugin hook rewrites the R import to com.foxdebug.<last id segment>.
     up = os.path.join(root, "src", "plugins", "browser", "utils", "updatePackage.js")
     if os.path.exists(up):
