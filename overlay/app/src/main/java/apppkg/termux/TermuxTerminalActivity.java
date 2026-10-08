@@ -122,7 +122,6 @@ public class TermuxTerminalActivity extends Activity
     @Override public boolean isTerminalViewSelected() { return true; }
     @Override public void copyModeChanged(boolean copyMode) { }
     @Override public boolean onKeyDown(int keyCode, KeyEvent e, TerminalSession session) { return false; }
-    @Override public boolean onKeyUp(int keyCode, KeyEvent e, TerminalSession session) { return false; }
     @Override public boolean onLongPress(MotionEvent event) { return false; }
     @Override public boolean readControlKey() { return ctrlDown; }
     @Override public boolean readAltKey() { return altDown; }
@@ -138,7 +137,7 @@ public class TermuxTerminalActivity extends Activity
     @Override public void onBell(TerminalSession session) { }
     @Override public void onColorsChanged(TerminalSession session) { }
     @Override public void onTerminalCursorStateChange(boolean state) { }
-    @Override public int getTerminalCursorStyle() { return TerminalEmulator.TERMINAL_CURSOR_STYLE_BLOCK; }
+    @Override public Integer getTerminalCursorStyle() { return TerminalEmulator.TERMINAL_CURSOR_STYLE_BLOCK; }
 
     @Override
     public void onCopyTextToClipboard(TerminalSession session, String text) {
