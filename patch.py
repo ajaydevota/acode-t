@@ -37,28 +37,19 @@ def fail(msg):
 
 # --------------------------------------------------------------------- pre
 if phase == "pre":
-    for rel in ("utils/setup.js", "utils/config.js"):
-        p = os.path.join(root, rel)
-        if not os.path.exists(p):
-            print("skip (missing):", rel)
-            continue
-        s = read(p)
-        s2 = s.replace('ID_PAID = "com.foxdebug.acode"', 'ID_PAID = "com.termux"')
-        s2 = s2.replace("ID_PAID = 'com.foxdebug.acode'", "ID_PAID = 'com.termux'")
-        if s2 != s:
-            write(p, s2)
-            print("patched", rel)
-        else:
-            print("no ID_PAID match in", rel)
-
     cfg = os.path.join(root, "config.xml")
     s = read(cfg)
-    s2 = re.sub(r'(<widget[^>]*\sid=")[^"]+(")', r"\1" + NEW_ID + r"\2", s, count=1)
-    s2 = re.sub(r"(<name>)[^<]*(</name>)", r"\1" + NEW_NAME + r"\2", s2, count=1)
+    # IMPORTANT: never change the widget id. Acode's hook
+    # src/plugins/browser/utils/updatePackage.js derives the R class package from the last
+    # segment of the widget id, so changing it breaks the whole native build. The installed
+    # package (com.termux, required by the Termux bootstrap paths) is set separately in the
+    # post phase by overriding applicationId in the generated app/build.gradle.
+    s2 = re.sub(r"(<name>)[^<]*(</name>)", r"\1" + NEW_NAME + r"\2", s, count=1)
     if s2 == s:
-        fail("config.xml unchanged (widget id / name not matched)")
-    write(cfg, s2)
-    print("patched config.xml ->", NEW_ID, NEW_NAME)
+        print("config.xml <name> unchanged")
+    else:
+        write(cfg, s2)
+        print("config.xml <name> ->", NEW_NAME)
     sys.exit(0)
 
 
@@ -93,6 +84,9 @@ print("java namespace:", ns)
 if 'applicationId' in gsrc:
     gsrc = re.sub(r'applicationId\s+["\'][\w.]+["\']', 'applicationId "%s"' % NEW_ID, gsrc)
     print("set applicationId =", NEW_ID)
+else:
+    gsrc += '\nandroid.defaultConfig.applicationId "%s"\n' % NEW_ID
+    print("appended applicationId =", NEW_ID)
 
 # ---- jitpack repo (must be on allprojects so dependencies can use it)
 for rel in ("build.gradle",):
