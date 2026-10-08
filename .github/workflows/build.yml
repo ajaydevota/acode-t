@@ -104,6 +104,17 @@ jobs:
           npx rspack --mode development
           cordova build android -- --packageType=apk
 
+      - name: Dump manifests (diagnostic)
+        if: always()
+        run: |
+          echo "=========== SOURCE MANIFEST (after patch) ==========="
+          grep -nE "activity|activity-alias|LAUNCHER|MAIN|TermuxActivity|MainActivity" \
+            src/platforms/android/app/src/main/AndroidManifest.xml | head -60
+          echo "=========== MERGED MANIFEST ==========="
+          f=$(find src/platforms/android/app/build -path "*merged_manifest*" -name "AndroidManifest.xml" | head -1)
+          echo "file: $f"
+          [ -n "$f" ] && grep -nE "activity|LAUNCHER|<application" "$f" | head -60
+
       - name: Collect APK
         run: |
           ls -la src/platforms/android/app/build/outputs/apk/debug/
