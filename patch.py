@@ -206,10 +206,28 @@ if "abiFilters" not in gsrc:
         print("abiFilters arm64-v8a")
 write(gradle, gsrc)
 
+# AGP 8 defaults to non-transitive R classes; Termux's code (e.g. appcompat dialog styles)
+# references library resources through the app R, so turn that off.
+props = os.path.join(platform, "gradle.properties")
+t = read(props) if os.path.exists(props) else ""
+if "nonTransitiveRClass" not in t:
+    t += "\nandroid.nonTransitiveRClass=false\n"
+    write(props, t)
+    print("nonTransitiveRClass=false set")
+
 # ---- merge upstream Termux java (app + termux-shared) untouched
 n1 = copy_tree(os.path.join(TERMUX, "app", "src", "main", "java"), java_dir)
 n2 = copy_tree(os.path.join(TERMUX, "termux-shared", "src", "main", "java"), java_dir)
 print("copied termux java:", n1, "+", n2)
+
+# WebSettings.setAppCacheEnabled() was removed in API 33; termux-app 0.118 targets SDK 28.
+help_java = os.path.join(java_dir, "com", "termux", "app", "activities", "HelpActivity.java")
+if os.path.exists(help_java):
+    t = read(help_java)
+    if "setAppCacheEnabled" in t:
+        t = re.sub(r"[^\n]*setAppCacheEnabled\([^\n]*\n", "", t)
+        write(help_java, t)
+        print("removed setAppCacheEnabled (gone in API 33+)")
 
 # termux-shared is its own Gradle module with its own R class; once merged into the app
 # module its resources live in the app R, so point those imports at com.termux.R.
