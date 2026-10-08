@@ -24,6 +24,13 @@ jobs:
           submodules: recursive
           path: src
 
+      - name: Checkout upstream termux-app (v0.118.0, unmodified)
+        uses: actions/checkout@v4
+        with:
+          repository: termux/termux-app
+          ref: v0.118.0
+          path: termux
+
       - name: Setup Java 21
         uses: actions/setup-java@v4
         with:
