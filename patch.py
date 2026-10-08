@@ -394,22 +394,39 @@ if "EditorActivity" not in s:
     print("manifest: EditorActivity added")
 
 # ---- make Termux's own TermuxActivity the ONLY launcher
-s = re.sub(
-    r"<intent-filter>\s*<action android:name=\"android\.intent\.action\.MAIN\"[^>]*/>\s*"
-    r"<category android:name=\"android\.intent\.category\.LAUNCHER\"[^>]*/>\s*</intent-filter>",
-    "", s)
 s = re.sub(r"<activity-alias[\s\S]*?</activity-alias>", "", s)
-launcher_filter = (
-    '\n            <intent-filter>\n'
-    '                <action android:name="android.intent.action.MAIN" />\n'
-    '                <category android:name="android.intent.category.LAUNCHER" />\n'
-    '            </intent-filter>')
-m = re.search(r'(<activity[^>]*android:name="\.app\.TermuxActivity"[^>]*>)', s)
-if m:
+
+
+def _drop_launcher_filters(text, keep_name):
+    """Remove every MAIN/LAUNCHER intent-filter that does not belong to `keep_name`."""
+    pattern = re.compile(r"<(activity|activity-alias)\b[^>]*?android:name=\"([^\"]+)\"[^>]*>[\s\S]*?</\1>")
+
+    def fix(match):
+        block, name = match.group(0), match.group(2)
+        if keep_name in name:
+            return block
+        return re.sub(r"<intent-filter[\s\S]*?</intent-filter>",
+                      lambda f: "" if "LAUNCHER" in f.group(0) else f.group(0),
+                      block)
+
+    return pattern.sub(fix, text)
+
+
+s = _drop_launcher_filters(s, ".app.TermuxActivity")
+if "android.intent.category.LAUNCHER" not in s:
+    fail("no LAUNCHER left after filtering")
+
+# make sure TermuxActivity really has one
+m = re.search(r'(<activity\b[^>]*?android:name="\.app\.TermuxActivity"[^>]*>)', s)
+if m and "LAUNCHER" not in s[m.end():m.end() + 700]:
+    launcher_filter = (
+        '\n            <intent-filter>\n'
+        '                <action android:name="android.intent.action.MAIN" />\n'
+        '                <category android:name="android.intent.category.LAUNCHER" />\n'
+        '            </intent-filter>')
     s = s[:m.end()] + launcher_filter + s[m.end():]
-    print("TermuxActivity is now the only launcher")
-else:
-    fail("could not find .app.TermuxActivity in merged manifest")
+    print("added LAUNCHER filter to TermuxActivity")
+print("TermuxActivity is now the only launcher")
 
 write(manifest, s)
 print("PATCH OK (post)")
