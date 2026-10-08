@@ -68,7 +68,8 @@ gsrc = read(gradle)
 
 # ---- work out the java namespace (where the generated R class lives)
 ns = None
-m = re.search(r'namespace\s+["\']([\w.]+)["\']', gsrc)
+# `namespace "x"` or `namespace = "x"`
+m = re.search(r'namespace\s*=?\s*["\']([\w.]+)["\']', gsrc)
 if m:
     ns = m.group(1)
 else:
@@ -77,8 +78,10 @@ else:
         if m:
             ns = m.group(1)
 if not ns:
-    ns = NEW_ID
+    # Acode's own plugin sources import com.foxdebug.acode.R, so that is the namespace.
+    ns = "com.foxdebug.acode"
 print("java namespace:", ns)
+print("namespace found in build.gradle:", bool(re.search(r'namespace', gsrc)))
 
 # ---- applicationId -> com.termux
 if 'applicationId' in gsrc:
