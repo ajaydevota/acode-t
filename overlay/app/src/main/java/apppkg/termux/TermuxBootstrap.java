@@ -5,6 +5,7 @@ import android.system.Os;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -120,7 +121,7 @@ public final class TermuxBootstrap {
         f.delete();
     }
 
-    private static void installCommands(Context c) {
+    public static void installCommands(Context c) {
         try {
             File bin = new File(prefix(c), "bin");
             if (!bin.exists()) return;
@@ -155,6 +156,26 @@ public final class TermuxBootstrap {
         "#!/data/data/com.termux/files/usr/bin/sh\n" +
         "echo \"$$\" > \"$HOME/.acode_open\"\n" +
         "echo \"Acode khul raha hai...\"\n";
+
+    /** Reads the bundled bootstrap zip (Termux's own installer consumes this). */
+    public static byte[] loadZipBytes(Context c) {
+        InputStream in = null;
+        try {
+            in = c.getAssets().open(ASSET);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+            return out.toByteArray();
+        } catch (Exception e) {
+            return new byte[0];
+        } finally {
+            try {
+                if (in != null) in.close();
+            } catch (Exception ignored) {
+            }
+        }
+    }
 
     /** Environment for the terminal session. */
     public static String[] env(Context c) {
