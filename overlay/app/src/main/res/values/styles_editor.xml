@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+      Dedicated theme for the `eg` editor.
+
+      The app theme (Theme.Termux) sets windowTranslucentStatus/windowTranslucentNavigation to
+      true, which is right for a full screen terminal but makes the status bar and navigation bar
+      overlap a normal activity. Here both are turned off, so the toolbar sits below the status bar,
+      the key row sits above the navigation bar, and adjustResize can move the key row above the
+      soft keyboard.
+    -->
+    <style name="Theme.Termux.Editor" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:colorPrimary">#FF252526</item>
+        <item name="android:colorPrimaryDark">#FF252526</item>
+        <item name="android:colorAccent">#FF88C0D0</item>
+        <item name="android:statusBarColor">#FF252526</item>
+        <item name="android:navigationBarColor">#FF252526</item>
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowTranslucentNavigation">false</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+
+</resources>
