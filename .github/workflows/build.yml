@@ -35,7 +35,7 @@ jobs:
         with:
           node-version: 'lts/*'
 
-      - name: Patch phase 1 (rename app to com.termux / Termux)
+      - name: Patch phase 1 (display name only)
         run: python3 patch.py src pre
 
       - name: Install deps + cordova + platform
@@ -51,14 +51,45 @@ jobs:
             "https://github.com/termux/termux-packages/releases/download/bootstrap-2026.10.04-r1%2Bapt.android-7/bootstrap-aarch64.zip"
           ls -la bootstrap-arm64.zip
 
-      - name: Patch phase 2 (terminal + editor + manifest + gradle)
+      - name: Install fuse into the Acode project + register hook
         run: |
-          python3 patch.py src post || {
-            echo "===== MANIFEST ====="; sed -n '1,90p' src/platforms/android/app/src/main/AndroidManifest.xml;
-            echo "===== APP GRADLE ====="; sed -n '1,140p' src/platforms/android/app/build.gradle;
-            exit 1; }
+          mkdir -p src/termux-fuse
+          cp patch.py bootstrap-arm64.zip src/termux-fuse/
+          cp -r overlay src/termux-fuse/overlay
+          cp termux-fuse/hook.js src/termux-fuse/hook.js
+          python3 - <<'PY'
+          import re
+          p = "src/config.xml"
+          s = open(p, encoding="utf-8").read()
+          if "termux-fuse/hook.js" not in s:
+              hook = '        <hook type="after_prepare" src="termux-fuse/hook.js" />\n'
+              i = s.rfind("</platform>")
+              s = s[:i] + hook + s[i:]
+              open(p, "w", encoding="utf-8").write(s)
+              print("hook registered")
+          else:
+              print("hook already registered")
+          PY
 
-      - name: Build (config + rspack + cordova)
+      - name: Dump termux client interface signatures (diagnostic)
+        continue-on-error: true
+        working-directory: src
+        run: |
+          set -x
+          mkdir -p /tmp/aar && cd /tmp/aar
+          for m in terminal-view terminal-emulator; do
+            curl -sSL -o $m.aar "https://jitpack.io/com/termux/termux-app/$m/0.118.0/$m-0.118.0.aar" || true
+            mkdir -p $m && (cd $m && unzip -o ../$m.aar classes.jar > /dev/null 2>&1 || true)
+          done
+          find /tmp/aar -name classes.jar | while read j; do
+            echo "===== $j ====="
+            unzip -o "$j" -d "${j%.jar}" > /dev/null 2>&1 || true
+          done
+          javap -classpath /tmp/aar/terminal-emulator/classes com.termux.terminal.TerminalSessionClient 2>&1 | head -40
+          echo "-----------"
+          javap -classpath /tmp/aar/terminal-view/classes:/tmp/aar/terminal-emulator/classes com.termux.view.TerminalViewClient 2>&1 | head -40
+
+      - name: Build (config + rspack + cordova, hook applies the fuse)
         working-directory: src
         run: |
           node utils/storage_manager.mjs y || true
