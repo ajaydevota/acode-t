@@ -1,4 +1,4 @@
-name: build-acode
+name: build-acode-termux-fused
 
 on:
   push:
@@ -6,13 +6,13 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: build-acode
+  group: fused
   cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 150
     steps:
       - name: Checkout harness
         uses: actions/checkout@v4
@@ -35,28 +35,47 @@ jobs:
         with:
           node-version: 'lts/*'
 
-      - name: Install deps + cordova + setup platform
+      - name: Patch phase 1 (rename app to com.termux / Termux)
+        run: python3 patch.py src pre
+
+      - name: Install deps + cordova + platform
         working-directory: src
         run: |
           npm install --no-audit --no-fund
           npm install -g cordova
           npm run setup
 
-      - name: Build debug APK
+      - name: Fetch Termux bootstrap
+        run: |
+          curl -L --retry 3 -o bootstrap-arm64.zip \
+            "https://github.com/termux/termux-packages/releases/download/bootstrap-2026.10.04-r1%2Bapt.android-7/bootstrap-aarch64.zip"
+          ls -la bootstrap-arm64.zip
+
+      - name: Patch phase 2 (terminal + editor + manifest + gradle)
+        run: |
+          python3 patch.py src post || {
+            echo "===== MANIFEST ====="; sed -n '1,90p' src/platforms/android/app/src/main/AndroidManifest.xml;
+            echo "===== APP GRADLE ====="; sed -n '1,140p' src/platforms/android/app/build.gradle;
+            exit 1; }
+
+      - name: Build (config + rspack + cordova)
         working-directory: src
         run: |
           node utils/storage_manager.mjs y || true
-          npm run build paid dev apk
+          node ./utils/config.js d paid
+          npx rspack --mode development
+          cordova build android -- --packageType=apk
 
       - name: Collect APK
         run: |
           ls -la src/platforms/android/app/build/outputs/apk/debug/
           mkdir -p out
-          cp src/platforms/android/app/build/outputs/apk/debug/app-debug.apk out/acode-debug.apk
+          cp src/platforms/android/app/build/outputs/apk/debug/app-debug.apk out/termux-acode.apk
+          ls -la out
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: acode-apk
-          path: out/acode-debug.apk
+          name: termux-acode-apk
+          path: out/termux-acode.apk
           if-no-files-found: error
