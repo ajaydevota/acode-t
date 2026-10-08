@@ -294,7 +294,12 @@ tm = read(tm_manifest)
 # permissions + uses-features from Termux
 perms = re.findall(r"<uses-permission[^>]*/>", tm)
 feats = re.findall(r"<uses-feature[^>]*/>", tm)
-add_head = "".join(p for p in perms if p not in s) + "".join(f for f in feats if f not in s)
+def strip_tools(x):
+    """Drop tools:* attributes (we merge into a manifest that has no tools namespace)."""
+    return re.sub(r'\s+tools:[\w.]+="[^"]*"', "", x)
+
+add_head = "".join(strip_tools(p) for p in perms if p not in s) + \
+           "".join(strip_tools(f) for f in feats if f not in s)
 
 body = tm[tm.index("<application"):tm.rindex("</application>")]
 body = re.sub(r"^<application[^>]*>", "", body, flags=re.S)
@@ -309,6 +314,7 @@ for k, v in {
 if "TermuxActivity" not in s:
     # drop Acode's launcher activity-aliases so Termux owns the launcher role
     s = re.sub(r"<activity-alias[\s\S]*?</activity-alias>", "", s)
+    body = strip_tools(body)
     s = s.replace("<application", '<application\n        android:name="com.termux.app.TermuxApplication"\n        android:theme="@style/Theme.Termux"', 1)
     idx = s.rindex("</application>")
     s = s[:idx] + body + "\n" + s[idx:]
