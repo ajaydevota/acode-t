@@ -122,6 +122,7 @@ public class TermuxTerminalActivity extends Activity
     @Override public boolean isTerminalViewSelected() { return true; }
     @Override public void copyModeChanged(boolean copyMode) { }
     @Override public boolean onKeyDown(int keyCode, KeyEvent e, TerminalSession session) { return false; }
+    @Override public boolean onKeyUp(int keyCode, KeyEvent e) { return false; }
     @Override public boolean onLongPress(MotionEvent event) { return false; }
     @Override public boolean readControlKey() { return ctrlDown; }
     @Override public boolean readAltKey() { return altDown; }
