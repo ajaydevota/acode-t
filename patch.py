@@ -182,6 +182,7 @@ if "termux-app:terminal-view" not in gsrc:
              "    implementation 'androidx.drawerlayout:drawerlayout:1.1.1'\n"
              "    implementation 'androidx.preference:preference:1.1.1'\n"
              "    implementation 'androidx.viewpager:viewpager:1.0.0'\n"
+             "    implementation 'androidx.window:window:1.0.0'\n"
              "    implementation 'com.google.guava:guava:24.1-jre'\n"
              "    implementation 'io.noties.markwon:core:4.6.2'\n"
              "    implementation 'io.noties.markwon:ext-strikethrough:4.6.2'\n"
@@ -202,6 +203,20 @@ write(gradle, gsrc)
 n1 = copy_tree(os.path.join(TERMUX, "app", "src", "main", "java"), java_dir)
 n2 = copy_tree(os.path.join(TERMUX, "termux-shared", "src", "main", "java"), java_dir)
 print("copied termux java:", n1, "+", n2)
+
+# termux-shared is its own Gradle module with its own R class; once merged into the app
+# module its resources live in the app R, so point those imports at com.termux.R.
+folded = 0
+for base, _, names in os.walk(java_dir):
+    for name in names:
+        if not name.endswith(".java"):
+            continue
+        fp = os.path.join(base, name)
+        t = read(fp)
+        if "com.termux.shared.R" in t:
+            write(fp, t.replace("com.termux.shared.R", "com.termux.R"))
+            folded += 1
+print("folded termux-shared R imports:", folded)
 
 # ---- merge upstream Termux resources (values are name-deduped; icons left alone)
 tm_res = os.path.join(TERMUX, "app", "src", "main", "res")
