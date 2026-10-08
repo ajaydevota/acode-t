@@ -37,19 +37,47 @@ def fail(msg):
 
 # --------------------------------------------------------------------- pre
 if phase == "pre":
+    # The installed package MUST be com.termux: the Termux bootstrap binaries have
+    # /data/data/com.termux/files/... compiled in. utils/config.js rewrites the widget id
+    # from ID_PAID on every build, so that constant is the real switch.
+    for rel in ("utils/config.js", "utils/setup.js"):
+        fp = os.path.join(root, rel)
+        if not os.path.exists(fp):
+            print("skip (missing):", rel)
+            continue
+        t = read(fp)
+        t2 = t.replace('ID_PAID = "com.foxdebug.acode"', 'ID_PAID = "com.termux"')
+        t2 = t2.replace("ID_PAID = 'com.foxdebug.acode'", "ID_PAID = 'com.termux'")
+        if t2 != t:
+            write(fp, t2)
+            print("patched ID_PAID in", rel)
+        else:
+            print("no ID_PAID match in", rel)
+
     cfg = os.path.join(root, "config.xml")
-    s = read(cfg)
-    # IMPORTANT: never change the widget id. Acode's hook
-    # src/plugins/browser/utils/updatePackage.js derives the R class package from the last
-    # segment of the widget id, so changing it breaks the whole native build. The installed
-    # package (com.termux, required by the Termux bootstrap paths) is set separately in the
-    # post phase by overriding applicationId in the generated app/build.gradle.
-    s2 = re.sub(r"(<name>)[^<]*(</name>)", r"\1" + NEW_NAME + r"\2", s, count=1)
-    if s2 == s:
-        print("config.xml <name> unchanged")
+    t = read(cfg)
+    t2 = re.sub(r'(<widget[^>]*?\sid=")[^"]+(")', r"\1" + NEW_ID + r"\2", t, count=1)
+    t2 = re.sub(r"(<name>)[^<]*(</name>)", r"\1" + NEW_NAME + r"\2", t2, count=1)
+    write(cfg, t2)
+    print("config.xml -> id", NEW_ID, "name", NEW_NAME)
+
+    # Acode's browser plugin hook rewrites the R import to com.foxdebug.<last id segment>.
+    # With the id now com.termux that would be com.foxdebug.termux.R, which does not exist.
+    up = os.path.join(root, "src", "plugins", "browser", "utils", "updatePackage.js")
+    if os.path.exists(up):
+        t = read(up)
+        t2 = re.sub(
+            r"const updated = data\.replace\([\s\S]*?\);",
+            lambda m: 'const updated = data.replace(/import\\s+com\\.foxdebug\\.(acode|acodefree)\\.R;/, "import com.termux.R;");',
+            t, count=1)
+        if t2 != t:
+            write(up, t2)
+            print("patched updatePackage.js -> com.termux.R")
+        else:
+            print("WARNING: updatePackage.js replace() not matched")
     else:
-        write(cfg, s2)
-        print("config.xml <name> ->", NEW_NAME)
+        print("WARNING: updatePackage.js not found")
+
     sys.exit(0)
 
 
@@ -68,20 +96,18 @@ gsrc = read(gradle)
 
 # ---- work out the java namespace (where the generated R class lives)
 ns = None
-# `namespace "x"` or `namespace = "x"`
-m = re.search(r'namespace\s*=?\s*["\']([\w.]+)["\']', gsrc)
-if m:
-    ns = m.group(1)
-else:
-    if os.path.exists(manifest):
-        m = re.search(r'package="([\w.]+)"', read(manifest))
-        if m:
-            ns = m.group(1)
+cfg_path = os.path.join(root, "config.xml")
+if os.path.exists(cfg_path):
+    m = re.search(r'<widget[^>]*?\sid="([^"]+)"', read(cfg_path))
+    if m:
+        ns = m.group(1)
 if not ns:
-    # Acode's own plugin sources import com.foxdebug.acode.R, so that is the namespace.
-    ns = "com.foxdebug.acode"
+    m = re.search(r'namespace\s*=?\s*["\']([\w.]+)["\']', gsrc)
+    if m:
+        ns = m.group(1)
+if not ns:
+    ns = NEW_ID
 print("java namespace:", ns)
-print("namespace found in build.gradle:", bool(re.search(r'namespace', gsrc)))
 
 # ---- applicationId -> com.termux
 if 'applicationId' in gsrc:
