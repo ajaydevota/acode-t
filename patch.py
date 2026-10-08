@@ -173,10 +173,22 @@ if os.path.exists(b):
         write(b, t)
         print("added jitpack allprojects")
 if "termux-app:terminal-view" not in gsrc:
+    # terminal-view/terminal-emulator from JitPack + the libraries upstream termux-app uses
     gsrc += ("\n\ndependencies {\n"
              "    implementation 'com.termux.termux-app:terminal-view:0.118.0'\n"
+             "    implementation 'com.google.android.material:material:1.12.0'\n"
+             "    implementation 'androidx.annotation:annotation:1.3.0'\n"
+             "    implementation 'androidx.core:core:1.6.0'\n"
+             "    implementation 'androidx.drawerlayout:drawerlayout:1.1.1'\n"
+             "    implementation 'androidx.preference:preference:1.1.1'\n"
+             "    implementation 'androidx.viewpager:viewpager:1.0.0'\n"
+             "    implementation 'com.google.guava:guava:24.1-jre'\n"
+             "    implementation 'io.noties.markwon:core:4.6.2'\n"
+             "    implementation 'io.noties.markwon:ext-strikethrough:4.6.2'\n"
+             "    implementation 'io.noties.markwon:linkify:4.6.2'\n"
+             "    implementation 'io.noties.markwon:recycler:4.6.2'\n"
              "}\n")
-    print("added terminal-view dependency")
+    print("added termux dependencies")
 
 # ---- arm64-v8a (the bundled bootstrap is arm64)
 if "abiFilters" not in gsrc:
