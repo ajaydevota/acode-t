@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:fitsSystemWindows="true"
+    android:background="#FF1E1E1E">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="#FF252526"
+        android:paddingLeft="4dp"
+        android:paddingRight="6dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp">
+
+        <TextView
+            android:id="@+id/backBtn"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:gravity="center"
+            android:text="&#8249;"
+            android:textColor="#FFE6E6E6"
+            android:textSize="26sp" />
+
+        <TextView
+            android:id="@+id/fileName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="untitled"
+            android:textColor="#FFE6E6E6"
+            android:textStyle="bold"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/saveButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="सेव"
+            android:textColor="#FF101010"
+            android:backgroundTint="#FF88C0D0" />
+    </LinearLayout>
+
+    <EditText
+        android:id="@+id/editorText"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="top|start"
+        android:inputType="textMultiLine|textNoSuggestions"
+        android:background="#FF1E1E1E"
+        android:textColor="#FFE6E6E6"
+        android:textSize="14sp"
+        android:padding="8dp"
+        android:hint=""
+        android:importantForAutofill="no" />
+
+    <HorizontalScrollView
+        android:id="@+id/suggestBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FF202023"
+        android:scrollbars="none"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/suggestRow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="5dp" />
+    </HorizontalScrollView>
+
+    <HorizontalScrollView
+        android:id="@+id/keyBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FF252526"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/keyRow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="5dp" />
+    </HorizontalScrollView>
+</LinearLayout>
