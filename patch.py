@@ -283,6 +283,11 @@ perms = re.findall(r"<uses-permission[^>]*/>", tm)
 feats = re.findall(r"<uses-feature[^>]*/>", tm)
 add_head = "".join(p for p in perms if p not in s) + "".join(f for f in feats if f not in s)
 
+# Termux's manifest uses tools:ignore etc., so the tools namespace must be declared
+if "xmlns:tools" not in s:
+    s = re.sub(r"(<manifest\b[^>]*?)>", r'\1 xmlns:tools="http://schemas.android.com/tools">', s, count=1)
+    print("added xmlns:tools to manifest")
+
 body = tm[tm.index("<application"):tm.rindex("</application>")]
 body = re.sub(r"^<application[^>]*>", "", body, flags=re.S)
 for k, v in {
