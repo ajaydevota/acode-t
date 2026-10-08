@@ -83,12 +83,12 @@ public final class RequestWatcher {
         sLastAcode = cur;
 
         try {
-            Intent i = app.getPackageManager().getLaunchIntentForPackage(app.getPackageName());
-            if (i != null) {
-                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                        | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-                app.startActivity(i);
-            }
+            // The launcher activity is Termux now, so target Acode's Cordova activity directly.
+            Intent i = new Intent();
+            i.setClassName(app.getPackageName(), app.getPackageName() + ".MainActivity");
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                    | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            app.startActivity(i);
         } catch (Exception e) {
             Log.e(LOG_TAG, "acode open failed: " + e);
         }
