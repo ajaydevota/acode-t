@@ -393,5 +393,23 @@ if "EditorActivity" not in s:
     s = s[:idx] + editor + s[idx:]
     print("manifest: EditorActivity added")
 
+# ---- make Termux's own TermuxActivity the ONLY launcher
+s = re.sub(
+    r"<intent-filter>\s*<action android:name=\"android\.intent\.action\.MAIN\"[^>]*/>\s*"
+    r"<category android:name=\"android\.intent\.category\.LAUNCHER\"[^>]*/>\s*</intent-filter>",
+    "", s)
+s = re.sub(r"<activity-alias[\s\S]*?</activity-alias>", "", s)
+launcher_filter = (
+    '\n            <intent-filter>\n'
+    '                <action android:name="android.intent.action.MAIN" />\n'
+    '                <category android:name="android.intent.category.LAUNCHER" />\n'
+    '            </intent-filter>')
+m = re.search(r'(<activity[^>]*android:name="\.app\.TermuxActivity"[^>]*>)', s)
+if m:
+    s = s[:m.end()] + launcher_filter + s[m.end():]
+    print("TermuxActivity is now the only launcher")
+else:
+    fail("could not find .app.TermuxActivity in merged manifest")
+
 write(manifest, s)
 print("PATCH OK (post)")
