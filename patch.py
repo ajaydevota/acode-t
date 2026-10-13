@@ -318,6 +318,13 @@ for sub in sorted(os.listdir(res_dir)):
             os.remove(fp)
             print("  removed Acode icon", sub + "/" + f)
 
+# Acode also ships density-qualified adaptive icons (mipmap-<density>-v26) which win over
+# Termux's mipmap-anydpi-v26 adaptive icon on API 26+. Drop them so Termux's icon is used.
+for sub in sorted(os.listdir(res_dir)):
+    if re.match(r"mipmap-.+-v\d+$", sub) and "anydpi" not in sub:
+        shutil.rmtree(os.path.join(res_dir, sub), ignore_errors=True)
+        print("  removed Acode adaptive icon dir", sub)
+
 # ---- our small additions (EditorActivity, CodeSuggest, CodeHighlighter, RequestWatcher,
 #      TermuxBootstrap) - TermuxTerminalActivity is dropped, Termux's real UI is used
 src_java = os.path.join(OVERLAY, "java", "apppkg", "termux")
