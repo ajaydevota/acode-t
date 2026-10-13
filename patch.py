@@ -113,6 +113,22 @@ if phase == "pre":
     write(cfg, t)
     print("config.xml -> id", NEW_ID, "name", NEW_NAME)
 
+    # ---- "Save to Termux": command palette entry that copies the open file into Termux's home
+    cr = os.path.join(root, "src", "cm", "commandRegistry.js")
+    if os.path.exists(cr):
+        t = read(cr)
+        if "saveToTermux" not in t:
+            a2 = "function registerCoreCommands() {"
+            if a2 in t:
+                snippet = read(os.path.join(_snip, "command_save_to_termux.js"))
+                t = t.replace(a2, a2 + "\n" + snippet, 1)
+                write(cr, t)
+                print("commandRegistry.js: Save to Termux command added")
+            else:
+                print("WARNING: registerCoreCommands anchor not found")
+        else:
+            print("commandRegistry.js already patched")
+
     # ---- share files + tools with Termux ------------------------------------------------
     _snip = os.path.join(HERE, "overlay", "acode-snippets")
 
