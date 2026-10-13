@@ -292,7 +292,9 @@ for src_root in (tm_res, sh_res):
         if not os.path.isdir(s):
             continue
         if sub.startswith("mipmap"):
-            print("  skipped", sub, "(keeps Acode launcher icon)")
+            # Termux's launcher icon wins (adaptive icon XML + the PNGs)
+            n = copy_tree(s, os.path.join(res_dir, sub))
+            print("  copied res/%s (%d) [Termux icon]" % (sub, n))
             continue
         d = os.path.join(res_dir, sub)
         if sub == "values" or sub == "values-night":
