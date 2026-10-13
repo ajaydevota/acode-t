@@ -307,6 +307,17 @@ for src_root in (tm_res, sh_res):
             n = copy_tree(s, d)
             print("  copied res/%s (%d)" % (sub, n))
 
+# Acode ships its launcher icon as .webp and Termux ships .png; both map to the same
+# resource name, so drop Acode's webp files (Termux's icon wins).
+for sub in sorted(os.listdir(res_dir)):
+    if not sub.startswith("mipmap"):
+        continue
+    for f in ("ic_launcher.webp", "ic_launcher_round.webp"):
+        fp = os.path.join(res_dir, sub, f)
+        if os.path.exists(fp):
+            os.remove(fp)
+            print("  removed Acode icon", sub + "/" + f)
+
 # ---- our small additions (EditorActivity, CodeSuggest, CodeHighlighter, RequestWatcher,
 #      TermuxBootstrap) - TermuxTerminalActivity is dropped, Termux's real UI is used
 src_java = os.path.join(OVERLAY, "java", "apppkg", "termux")
