@@ -10,18 +10,31 @@
 			const doc = activeFile.session?.doc;
 			const text =
 				doc && typeof doc.toString === "function" ? doc.toString() : "";
-			const homeDir = cordova.file.dataDirectory + "home/";
+
+			const base = cordova.file.dataDirectory; // file:///data/data/com.termux/files/
+			const homeDir = base + "home/";
 			const target = homeDir + filename;
+
+			// make sure Termux's home directory exists
 			try {
 				if (!(await fsOperation(homeDir).exists())) {
-					await fsOperation(cordova.file.dataDirectory).createDirectory("home");
+					await fsOperation(base).createDirectory("home");
 				}
 			} catch (e) {
-				/* the directory may already exist */
+				/* already there */
 			}
-			await fsOperation(target).writeFile(text, "utf-8");
+
+			// overwrite if the file already exists, otherwise create it
+			try {
+				await fsOperation(target).writeFile(text, "utf-8");
+			} catch (e) {
+				await fsOperation(homeDir).createFile(filename, text);
+			}
+
 			toast("Saved to Termux: " + filename);
 		} catch (error) {
-			helpers.error(error);
+			const msg =
+				(error && (error.message || error.name)) || String(error);
+			toast("Save to Termux failed: " + msg);
 		}
 	},
