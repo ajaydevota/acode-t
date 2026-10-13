@@ -114,6 +114,7 @@ if phase == "pre":
     print("config.xml -> id", NEW_ID, "name", NEW_NAME)
 
     # ---- "Save to Termux": command palette entry that copies the open file into Termux's home
+    _snip = os.path.join(HERE, "overlay", "acode-snippets")
     cr = os.path.join(root, "src", "cm", "commandRegistry.js")
     if os.path.exists(cr):
         t = read(cr)
