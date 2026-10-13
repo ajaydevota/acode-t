@@ -150,6 +150,37 @@ if phase == "pre":
         else:
             print("fileBrowser.js already patched")
 
+    # ---- "Save to Termux" in the app side menu (right under Save as) + its handler ----
+    mh = os.path.join(root, "src", "views", "menu.hbs")
+    if os.path.exists(mh):
+        t = read(mh)
+        if "save-to-termux" not in t:
+            m = re.search(r'<li action="save-as"[\s\S]*?</li>', t)
+            if m:
+                snippet = read(os.path.join(_snip, "menu_save_to_termux.hbs"))
+                t = t[:m.end()] + "\n" + snippet + t[m.end():]
+                write(mh, t)
+                print("menu.hbs: Save to Termux item added")
+            else:
+                print("WARNING: menu.hbs save-as item not found")
+        else:
+            print("menu.hbs already patched")
+
+    cmdf = os.path.join(root, "src", "lib", "commands.js")
+    if os.path.exists(cmdf):
+        t = read(cmdf)
+        if "save-to-termux" not in t:
+            a2 = '\t"save-state"() {'
+            if a2 in t:
+                snippet = read(os.path.join(_snip, "commands_save_to_termux.js"))
+                t = t.replace(a2, snippet + a2, 1)
+                write(cmdf, t)
+                print("commands.js: Save to Termux handler added")
+            else:
+                print("WARNING: commands.js save-state anchor not found")
+        else:
+            print("commands.js already patched")
+
     pm = os.path.join(root, "src", "plugins", "terminal", "src", "android", "ProcessManager.java")
     if os.path.exists(pm):
         t = read(pm)
